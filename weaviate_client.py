@@ -3,8 +3,12 @@ import json
 import os
 
 import weaviate
+from weaviate.classes.query import Filter
+
 from logging_config import setup_logger
 
+
+# Initialize the logger
 
 logger = setup_logger()
 
@@ -12,78 +16,222 @@ logger = setup_logger()
 class WeaviateClient:
 
     def __init__(self):
+
         self.client = None
         self.collection_name = "Movie_Metadata"
+
+    # -----------------------------
+    # Establish Weaviate connection
+    # -----------------------------
 
     def connect(self):
 
         config = configparser.ConfigParser()
-        config_path = os.path.join(os.path.dirname(__file__),"config.ini")
 
-        config.read(os.path.abspath(config_path))
+        config_path = os.path.join(
+            os.path.dirname(__file__),
+            "config.ini"
+        )
+
+        config.read(
+            os.path.abspath(config_path)
+        )
 
         try:
+
+            # Read Weaviate configuration
+
             weaviate_url = config["WEAVIATE"]["WEAVIATE_URL"]
             weaviate_api_key = config["WEAVIATE"]["WEAVIATE_API"]
 
+            # Establish Weaviate connection
+
             self.client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=weaviate_url,
-                auth_credentials=weaviate.auth.AuthApiKey(weaviate_api_key))
+                auth_credentials=weaviate.auth.AuthApiKey(
+                    weaviate_api_key
+                )
+            )
 
-            logger.info("Weaviate connection established successfully!")
+            logger.info(
+                "Weaviate connection established successfully!"
+            )
 
             return self.client
 
         except Exception as e:
-            logger.error(f"Weaviate connection failed: {e}")
+
+            logger.error(
+                f"Weaviate connection failed: {e}"
+            )
+
             raise
 
-    def search_movies(self,query: str,limit: int = 5) -> list:
+    # -----------------------------
+    # Search movies
+    # -----------------------------
 
-        collection = self.client.collections.use(self.collection_name)
+    def search_movies(
+        self,
+        query: str,
+        genre: str | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        limit: int = 5
+    ) -> list:
 
-        response = collection.query.near_text(
-            query=query,
-            limit=limit
-        )
+        try:
 
-        results = []
+            collection = self.client.collections.use(
+                self.collection_name
+            )
 
-        for obj in response.objects:
-            results.append(obj.properties)
+            weaviate_filters = None
 
-        return results
+            # -----------------------------
+            # Start year filter
+            # -----------------------------
+
+            if start_year is not None:
+
+                weaviate_filters = Filter.by_property(
+                    "title_year"
+                ).greater_or_equal(
+                    start_year
+                )
+
+            # -----------------------------
+            # End year filter
+            # -----------------------------
+
+            if end_year is not None:
+
+                year_filter = Filter.by_property(
+                    "title_year"
+                ).less_or_equal(
+                    end_year
+                )
+
+                if weaviate_filters is None:
+
+                    weaviate_filters = year_filter
+
+                else:
+
+                    weaviate_filters = (
+                        weaviate_filters & year_filter
+                    )
+
+            # -----------------------------
+            # Genre filter
+            # -----------------------------
+
+            if genre is not None:
+
+                genre_filter = Filter.by_property(
+                    "genres"
+                ).like(
+                    f"*{genre}*"
+                )
+
+                if weaviate_filters is None:
+
+                    weaviate_filters = genre_filter
+
+                else:
+
+                    weaviate_filters = (
+                        weaviate_filters & genre_filter
+                    )
+
+            # -----------------------------
+            # Execute Weaviate query
+            # -----------------------------
+
+            response = collection.query.near_text(
+                query=query,
+                limit=limit,
+                filters=weaviate_filters
+            )
+
+            results = []
+
+            for obj in response.objects:
+
+                results.append(
+                    obj.properties
+                )
+
+            logger.info(
+                f"Successfully retrieved {len(results)} movie records."
+            )
+
+            return results
+
+        except Exception as e:
+
+            logger.error(
+                f"Movie search failed: {e}"
+            )
+
+            raise
+
+    # -----------------------------
+    # Close Weaviate connection
+    # -----------------------------
 
     def close(self):
 
         if self.client:
+
             self.client.close()
 
-            logger.info("Weaviate connection closed.")
-
-
-if __name__ == "__main__":
-
-    weaviate_client = WeaviateClient()
-
-    try:
-
-        client = weaviate_client.connect()
-
-        if client.is_ready():
-
-            exists = client.collections.get("Movie_Metadata" ).exists()
-
-            print(f"Movie_Metadata collection exists: {exists}")
-
-            results = weaviate_client.search_movies(
-                query="Action movies from 2012 to 2014",
-                limit=2
+            logger.info(
+                "Weaviate connection closed."
             )
 
-            for result in results:
-                print(json.dumps(result,indent=2))
 
-    finally:
+# -----------------------------
+# Test Weaviate connection
+# -----------------------------
 
-        weaviate_client.close()
+# if __name__ == "__main__":
+
+#     weaviate_client = WeaviateClient()
+
+#     client = weaviate_client.connect()
+
+#     try:
+
+#         if client.is_ready():
+
+#             exists = client.collections.get(
+#                 "Movie_Metadata"
+#             ).exists()
+
+#             print(
+#                 f"Movie_Metadata collection exists: {exists}"
+#             )
+
+#             # Search movies using filters
+
+#             results = weaviate_client.search_movies(
+#                 query="Action movies from 2012 to 2014",
+#                 genre="Action",
+#                 start_year=2012,
+#                 end_year=2014,
+#                 limit=5
+#             )
+
+#             for result in results:
+
+#                 print(
+#                     json.dumps(
+#                         result,
+#                         indent=2
+#                     )
+#                 )
+
+#     finally:
+
+#         weaviate_client.close()
