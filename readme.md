@@ -14,6 +14,7 @@ The system uses:
 - **Pydantic** - Structured query validation
 - **Weaviate** - Vector database and retrieval
 - **Python** - Application logic
+-   **Streamlit** - Front end application for end user
 
 ---
 
@@ -30,6 +31,7 @@ vanilla_rag/
 ├── rag.py
 ├── weaviate_client.py
 ├── check.ipynb
+├── streamlit_app.py
 └── .gitignore
 ```
 
@@ -42,6 +44,7 @@ vanilla_rag/
 - `logging_config.py` - Configures application logging.
 - `movie_metadata.csv` - Movie metadata used by the application.
 - `config.ini` - Stores application configuration.
+- 'streamlit_app.py' - Front end app for end user interaction
 
 ---
 
@@ -171,6 +174,7 @@ Relevant information is retrieved from the external movie dataset at runtime and
 - Pydantic
 - Weaviate
 - ConfigParser
+- Streamlit
 - Python Logging
 
 ---
@@ -180,7 +184,7 @@ Relevant information is retrieved from the external movie dataset at runtime and
 Activate the Python environment and run:
 
 ```bash
-python rag.py
+streamlit run streamlit_app.py
 ```
 
 The application will:

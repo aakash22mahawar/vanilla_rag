@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 from logging_config import setup_logger
 from llm import LLMClient
 
-
 # Initialize the logger
 
 logger = setup_logger()
@@ -30,6 +29,16 @@ class MovieQueryFilters(BaseModel):
     end_year: int | None = Field(
         default=None,
         description="Ending year of the requested movie range."
+    )
+
+    sort_by: str | None = Field(
+        default=None,
+        description="Movie property used to sort the results."
+    )
+
+    sort_order: str | None = Field(
+        default=None,
+        description="Sort direction: ascending or descending."
     )
 
 
@@ -63,27 +72,36 @@ class QueryParser:
         try:
 
             prompt = f"""
-                        You are a movie search query parser.
+                    You are a movie search query parser.
 
-                        Extract the following information from the user's
-                        movie search query:
+                    Extract the following information from the user's
+                    movie search query:
 
-                        - genre
-                        - start_year
-                        - end_year
+                    - genre
+                    - start_year
+                    - end_year
+                    - sort_by
+                    - sort_order
 
-                        Rules:
+                    Rules:
 
-                        1. Extract the movie genre if mentioned.
-                        2. Extract the starting year if a year range is mentioned.
-                        3. Extract the ending year if a year range is mentioned.
-                        4. If a value is not mentioned, return null.
-                        5. Do not invent or assume values.
-                        6. Return the result according to the provided schema.
+                    1. Extract the movie genre if mentioned.
+                    2. Extract the starting year if a year range is mentioned.
+                    3. Extract the ending year if a year range is mentioned.
+                    4. If the user asks for highest or best IMDb rating,
+                       set sort_by to "imdb_score".
+                    5. If the user asks for lowest IMDb rating,
+                       set sort_by to "imdb_score".
+                    6. Use "descending" for highest or best.
+                    7. Use "ascending" for lowest.
+                    8. If sorting is not requested, return null
+                       for sort_by and sort_order.
+                    9. Do not invent or assume values.
+                    10. Return the result according to the provided schema.
 
-                        User query:
-                        {query}
-                        """
+                    User query:
+                    {query}
+                    """
 
             logger.info(
                 f"Parsing user query: {query}"
@@ -109,9 +127,9 @@ class QueryParser:
             raise
 
 
-# # -----------------------------
-# # Test query parser
-# # -----------------------------
+# -----------------------------
+# Test query parser
+# -----------------------------
 
 # if __name__ == "__main__":
 
@@ -123,7 +141,10 @@ class QueryParser:
 
 #     try:
 
-#         query = "Show me comedy movies from 2000 to 2005"
+#         query = (
+#             "Which action movie between 2012 and 2014 "
+#             "had the highest IMDb rating?"
+#         )
 
 #         filters = query_parser.parse(
 #             query=query

@@ -6,7 +6,6 @@ from weaviate_client import WeaviateClient
 from llm import LLMClient
 from query_parser import QueryParser, MovieQueryFilters
 
-
 # Initialize the logger
 
 logger = setup_logger()
@@ -38,6 +37,7 @@ class MovieRAG:
 
             raise
 
+
     # -----------------------------
     # Retrieve relevant movie data
     # -----------------------------
@@ -60,7 +60,13 @@ class MovieRAG:
                 genre=filters.genre,
                 start_year=filters.start_year,
                 end_year=filters.end_year,
+                sort_by=filters.sort_by,
+                sort_order=filters.sort_order,
                 limit=limit
+            )
+
+            logger.info(
+                f"Successfully retrieved {len(results)} movie records."
             )
 
             return results
@@ -72,6 +78,7 @@ class MovieRAG:
             )
 
             raise
+
 
     # -----------------------------
     # Generate answer using LLM
@@ -92,25 +99,25 @@ class MovieRAG:
             )
 
             prompt = f"""
-                    You are a movie information assistant.
+                You are a movie information assistant.
 
-                    Answer the user's question using ONLY the movie
-                    information provided in the context below.
+                Answer the user's question using ONLY the movie
+                information provided in the context below.
 
-                    If the context does not contain enough information
-                    to answer the question, clearly state that the
-                    available movie data is insufficient.
+                If the context does not contain enough information
+                to answer the question, clearly state that the
+                available movie data is insufficient.
 
-                    Do not invent movie information.
+                Do not invent movie information.
 
-                    Context:
-                    {context_text}
+                Context:
+                {context_text}
 
-                    User question:
-                    {query}
+                User question:
+                {query}
 
-                    Provide a clear and concise answer.
-                    """
+                Provide a clear and concise answer.
+                """
 
             logger.info(
                 "Sending retrieved context to LLM."
@@ -133,6 +140,7 @@ class MovieRAG:
             )
 
             raise
+
 
     # -----------------------------
     # Execute RAG pipeline
@@ -189,6 +197,7 @@ class MovieRAG:
 
             raise
 
+
     # -----------------------------
     # Close resources
     # -----------------------------
@@ -216,25 +225,27 @@ class MovieRAG:
 # Test the RAG pipeline
 # -----------------------------
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    rag = MovieRAG()
+#     rag = MovieRAG()
 
-    try:
+#     try:
 
-        query = "Which action movie between 2012 and 2014 had the highest IMDb rating?"
+#         query = (
+#             "Which action movie between 2012 and 2014 had the highest IMDb rating?"
+#         )
 
-        answer = rag.ask(
-            query=query,
-            limit=5
-        )
+#         answer = rag.ask(
+#             query=query,
+#             limit=5
+#         )
 
-        print("\n" + "=" * 80)
-        print("RAG ANSWER")
-        print("=" * 80)
+#         print("\n" + "=" * 80)
+#         print("RAG ANSWER")
+#         print("=" * 80)
 
-        print(answer)
+#         print(answer)
 
-    finally:
+#     finally:
 
-        rag.close()
+#         rag.close()

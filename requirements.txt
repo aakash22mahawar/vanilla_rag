@@ -1,0 +1,4 @@
+openai==2.53.0
+pydantic==2.13.4
+streamlit==1.60.0
+weaviate_client==4.22.0
